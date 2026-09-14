@@ -38,21 +38,19 @@ static void CLI_HandleAssetTypeWhitelist(const CCommandLine* const cli)
     if (!IS_NOGUI(cli))
         return;
 
-    if(cli->HasParam("--loadwhitelist"))
+    if (!cli->HasParam("--loadwhitelist"))
     {
         for (auto& [fourCC, binding] : g_assetData.m_assetTypeBindings)
-        {
             binding._loadAssetType = true;
-        }
-    }
-    else
-    {
-        const std::unordered_set<uint32_t> filterTypes = CLI_GetCommaSeparatedAssetTypes(cli, "--loadwhitelist");
 
-        for (auto& [fourCC, binding] : g_assetData.m_assetTypeBindings)
-        {
-            binding._loadAssetType = filterTypes.contains(fourCC);
-        }
+        return;
+    }
+
+    const std::unordered_set<uint32_t> filterTypes = CLI_GetCommaSeparatedAssetTypes(cli, "--loadwhitelist");
+
+    for (auto& [fourCC, binding] : g_assetData.m_assetTypeBindings)
+    {
+        binding._loadAssetType = filterTypes.contains(fourCC);
     }
 
 }
