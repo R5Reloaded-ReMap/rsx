@@ -3,6 +3,7 @@
 #include <core/filehandling/export.h>
 #include <core/utils/cli_parser.h>
 #include <core/filehandling/validation.h>
+#include <iostream>
 
 extern CBufferManager g_BufferManager;
 
@@ -249,8 +250,95 @@ void OnCLILoadComplete(const CCommandLine* const cli)
     }
 }
 
+// ReMap protocol v1: keep one RSX process and one archive set alive across model exports.
+static void RunReMapSession(const CCommandLine* const cli, const std::filesystem::path& outputRoot)
+{
+    auto reply = [](const char* status, const std::string& detail = "")
+    {
+        printf("REMAP_SESSION\t%s\t%s\n", status, detail.c_str());
+        fflush(stdout);
+    };
+
+    std::filesystem::create_directories(outputRoot);
+    reply("READY", "1");
+    std::string line;
+    while (std::getline(std::cin, line))
+    {
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+        if (line == "QUIT")
+            break;
+
+        try
+        {
+            std::vector<std::string> parts;
+            std::istringstream fields(line);
+            for (std::string field; std::getline(fields, field, '\t');)
+                parts.push_back(field);
+
+            if (parts.size() >= 2 && parts[0] == "LOAD")
+            {
+                std::vector<std::string> archives(parts.begin() + 1, parts.end());
+                for (const std::string& archive : archives)
+                {
+                    if (std::filesystem::path(archive).extension() != ".rpak" || !std::filesystem::is_regular_file(archive))
+                        throw std::runtime_error("Invalid archive path");
+                }
+
+                g_assetData.ClearAssetData();
+                HandleFileLoad(std::move(archives), nullptr, cli);
+                reply("LOADED");
+            }
+            else if (parts.size() == 3 && parts[0] == "EXPORT")
+            {
+                auto isHex = [](const std::string& value, size_t size)
+                {
+                    return value.size() == size && value.find_first_not_of("0123456789abcdefABCDEF") == std::string::npos;
+                };
+                if (!isHex(parts[1], 16) || !isHex(parts[2], 8))
+                    throw std::runtime_error("Invalid model or job ID");
+
+                const uint64_t guid = std::stoull(parts[1], nullptr, 16);
+                CPakAsset* const asset = g_assetData.FindAssetByGUID<CPakAsset>(guid);
+                if (!asset || asset->GetAssetType() != MAKEFOURCC('m', 'd', 'l', '_'))
+                    throw std::runtime_error("Model missing from loaded archive");
+
+                g_rsxSettings.SetExportDirectory(outputRoot / parts[2]);
+                g_rsxSettings.exportMaterialTextures = true;
+                HandlePakAssetExportList({ asset }, false);
+                if (!asset->GetExportedStatus())
+                {
+                    asset->SetExportedStatus(false);
+                    g_rsxSettings.exportMaterialTextures = false;
+                    HandlePakAssetExportList({ asset }, false);
+                    g_rsxSettings.exportMaterialTextures = true;
+                }
+
+                reply(asset->GetExportedStatus() ? "DONE" : "FAILED", parts[1] + "\t" + parts[2]);
+            }
+            else
+            {
+                throw std::runtime_error("Invalid session command");
+            }
+        }
+        catch (const std::exception& exception)
+        {
+            reply("ERROR", exception.what());
+        }
+    }
+
+    g_assetData.ClearAssetData();
+    reply("BYE");
+}
+
 void HandleLoadFromCommandLine(const CCommandLine* const cli)
 {
+    if (const char* const root = cli->GetParamValue("--remap-session"))
+    {
+        RunReMapSession(cli, root);
+        return;
+    }
+
     std::vector<std::string> filePaths;
 
     for (uint32_t i = cli->GetFirstNonFlagArgIdx(); i < cli->GetArgC(); ++i) // we skip 0 since its selfpath

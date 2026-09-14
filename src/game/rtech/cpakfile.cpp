@@ -2,6 +2,7 @@
 // Licensed under AGPLv3. Details available at https://github.com/r-ex/rsx/blob/main/LICENSE
 
 #include <pch.h>
+#include <core/compression/zstdcodec.h>
 #include <game/rtech/cpakfile.h>
 #include <game/rtech/patchapi.h>
 
@@ -764,10 +765,46 @@ const bool CPakFile::DecompressFileBuffer(const char* fileBuffer, std::shared_pt
     }
     else if (header->flags & PAK_HEADER_FLAGS_ZSTD_ENCODED)
     {
-        g_assetData.Log_Error(this, "Pak file used ZSTD compression. RSX does not support this compression");
+        if (header->cmpSize <= 0 || header->dcmpSize <= 0 ||
+            static_cast<uint64_t>(header->dcmpSize) <= header->pakHdrSize)
+        {
+            g_assetData.Log_Error(this, "Invalid compressed or decompressed size in ZSTD pak header");
+            delete header;
+            return false;
+        }
 
-        delete header;
-        return false;
+        std::shared_ptr<char[]> dcmpBuf = std::shared_ptr<char[]>(new char[header->dcmpSize] {});
+        const size_t outputCapacity = static_cast<size_t>(header->dcmpSize - header->pakHdrSize);
+        const Compression::ZstdDecodeResult result = Compression::DecodeZstdFrame(
+            fileBuffer + header->pakHdrSize,
+            static_cast<size_t>(static_cast<uint64_t>(header->cmpSize)),
+            dcmpBuf.get() + header->pakHdrSize,
+            outputCapacity);
+
+        if (!result)
+        {
+            g_assetData.Log_Error(this, "Failed to decompress ZSTD pak file: %s", result.error);
+            delete header;
+            return false;
+        }
+
+        if (result.bytesWritten != outputCapacity)
+        {
+            g_assetData.Log_Error(this,
+                "ZSTD pak decompressed to an unexpected size (expected %zu, got %zu)",
+                outputCapacity,
+                result.bytesWritten);
+            delete header;
+            return false;
+        }
+
+        memcpy_s(dcmpBuf.get(), header->pakHdrSize, fileBuffer, header->pakHdrSize);
+
+        if (outBuffer->get() != nullptr)
+            outBuffer->reset();
+
+        *outBuffer = dcmpBuf;
+
     }
 
     delete header;

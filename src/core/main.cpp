@@ -247,7 +247,7 @@ int main(int argc, char* argv[])
     CCommandLine cli(argc, argv);
 
 #if !defined(_DEBUG) && defined(_WIN32)
-    if (IS_NOGUI(&cli))
+    if (IS_NOGUI(&cli) && !cli.HasParam("-embedded"))
         CreateConsole();
 #endif
 

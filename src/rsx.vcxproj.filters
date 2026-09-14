@@ -118,8 +118,14 @@
     <Filter Include="core\bridge">
       <UniqueIdentifier>{ed944e90-b9d0-4ab5-9ee8-2c9e6dddf993}</UniqueIdentifier>
     </Filter>
+    <Filter Include="core\compression">
+      <UniqueIdentifier>{3cf1600b-9181-4ff8-a2d1-e97a6bb15182}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="core\compression\zstdcodec.h">
+      <Filter>core\compression</Filter>
+    </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>pch</Filter>
     </ClInclude>
@@ -527,6 +533,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="core\compression\zstdcodec.cpp">
+      <Filter>core\compression</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>pch</Filter>
     </ClCompile>
