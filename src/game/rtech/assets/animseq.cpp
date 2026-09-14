@@ -94,7 +94,13 @@ bool AnimSeq_ParseExtraData(CPakAsset* pakAsset)
 	{
 		bones = seqAsset->parentRig->GetRig();
 	}
-	assertm(!bones->empty(), "we should have bones at this point.");
+
+	if (!bones || bones->empty())
+	{
+		g_assetData.Log_Warning(pakAsset->GetContainerFile<CAssetContainer>(),
+			"Skipping animation sequence 0x%llX because its skeleton has no bones.", pakAsset->GetAssetGUID());
+		return false;
+	}
 
 	switch (seqAsset->version)
 	{
