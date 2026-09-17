@@ -164,9 +164,9 @@ void HandlePakAssetExportList(std::deque<CAsset*> selectedAssets, const bool exp
 
     CParallelTask parallelProcessTask(UtilsConfig->exportThreadCount);
 
-    for (auto& asset : selectedAssets)
+    for (CAsset* const asset : selectedAssets)
     {
-        parallelProcessTask.addTask([&asset, exportDependencies]
+        parallelProcessTask.addTask([asset, exportDependencies]
             {
                 HandleExportBindingForAsset(asset, exportDependencies);
             }, 1u);

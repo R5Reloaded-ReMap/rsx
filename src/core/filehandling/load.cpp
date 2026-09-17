@@ -249,6 +249,7 @@ void OnCLILoadComplete(const CCommandLine* const cli)
 }
 
 // ReMap protocol v1: keep one RSX process and one archive set alive across model exports.
+// The optional v2 marker adds EXPORTBATCH while keeping the wire handshake compatible with v1 clients.
 static void RunReMapSession(const CCommandLine* const cli, const std::filesystem::path& outputRoot)
 {
     auto reply = [](const char* status, const std::string& detail = "")
@@ -274,6 +275,11 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
             for (std::string field; std::getline(fields, field, '\t');)
                 parts.push_back(field);
 
+            auto isHex = [](const std::string& value, size_t size)
+            {
+                return value.size() == size && value.find_first_not_of("0123456789abcdefABCDEF") == std::string::npos;
+            };
+
             if (parts.size() >= 2 && parts[0] == "LOAD")
             {
                 std::vector<std::string> archives(parts.begin() + 1, parts.end());
@@ -289,10 +295,6 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
             }
             else if (parts.size() == 3 && parts[0] == "EXPORT")
             {
-                auto isHex = [](const std::string& value, size_t size)
-                {
-                    return value.size() == size && value.find_first_not_of("0123456789abcdefABCDEF") == std::string::npos;
-                };
                 if (!isHex(parts[1], 16) || !isHex(parts[2], 8))
                     throw std::runtime_error("Invalid model or job ID");
 
@@ -313,6 +315,55 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
                 }
 
                 reply(asset->GetExportedStatus() ? "DONE" : "FAILED", parts[1] + "\t" + parts[2]);
+            }
+            else if (parts.size() >= 3 && parts.size() <= 10 && parts[0] == "EXPORTBATCH")
+            {
+                if (!isHex(parts[1], 8))
+                    throw std::runtime_error("Invalid batch job ID");
+
+                std::deque<CAsset*> assets;
+                for (size_t i = 2; i < parts.size(); ++i)
+                {
+                    if (!isHex(parts[i], 16))
+                        throw std::runtime_error("Invalid model ID");
+                    const uint64_t guid = std::stoull(parts[i], nullptr, 16);
+                    CPakAsset* const asset = g_assetData.FindAssetByGUID<CPakAsset>(guid);
+                    if (!asset || asset->GetAssetType() != MAKEFOURCC('m', 'd', 'l', '_'))
+                        throw std::runtime_error("Model missing from loaded archive");
+                    if (std::find(assets.begin(), assets.end(), asset) != assets.end())
+                        throw std::runtime_error("Duplicate model ID");
+                    asset->SetExportedStatus(false);
+                    assets.emplace_back(asset);
+                }
+
+                g_rsxSettings.SetExportDirectory(outputRoot / parts[1]);
+                g_rsxSettings.exportMaterialTextures = true;
+                try
+                {
+                    HandlePakAssetExportList(assets, false);
+                    std::deque<CAsset*> failed;
+                    for (CAsset* const asset : assets)
+                    {
+                        if (!asset->GetExportedStatus())
+                        {
+                            asset->SetExportedStatus(false);
+                            failed.emplace_back(asset);
+                        }
+                    }
+                    if (!failed.empty())
+                    {
+                        g_rsxSettings.exportMaterialTextures = false;
+                        HandlePakAssetExportList(std::move(failed), false);
+                    }
+                    g_rsxSettings.exportMaterialTextures = true;
+                }
+                catch (...)
+                {
+                    g_rsxSettings.exportMaterialTextures = true;
+                    throw;
+                }
+
+                reply("BATCHDONE", parts[1]);
             }
             else
             {

@@ -544,7 +544,8 @@
       <Command>powershell -ExecutionPolicy Bypass -File "$(SolutionDir)tools\prebuild.ps1" -projectDir $(ProjectDir)</Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>echo ReMap session protocol v1&gt;"$(TargetPath).remap-session-v1"</Command>
+      <Command>echo ReMap session protocol v1&gt;"$(TargetPath).remap-session-v1"
+echo ReMap batch session protocol v2&gt;"$(TargetPath).remap-session-v2"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_CI|x64'">
