@@ -249,7 +249,7 @@ void OnCLILoadComplete(const CCommandLine* const cli)
 }
 
 // ReMap protocol v1: keep one RSX process and one archive set alive across model exports.
-// The optional v2 marker adds EXPORTBATCH while keeping the wire handshake compatible with v1 clients.
+// V2 adds EXPORTBATCH. V3 adds geometry-only commands for assets whose streamed textures crash RSX.
 static void RunReMapSession(const CCommandLine* const cli, const std::filesystem::path& outputRoot)
 {
     auto reply = [](const char* status, const std::string& detail = "")
@@ -293,7 +293,7 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
                 HandleFileLoad(std::move(archives), nullptr, cli);
                 reply("LOADED");
             }
-            else if (parts.size() == 3 && parts[0] == "EXPORT")
+            else if (parts.size() == 3 && (parts[0] == "EXPORT" || parts[0] == "EXPORTGEOMETRY"))
             {
                 if (!isHex(parts[1], 16) || !isHex(parts[2], 8))
                     throw std::runtime_error("Invalid model or job ID");
@@ -303,20 +303,31 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
                 if (!asset || asset->GetAssetType() != MAKEFOURCC('m', 'd', 'l', '_'))
                     throw std::runtime_error("Model missing from loaded archive");
 
+                const bool geometryOnly = parts[0] == "EXPORTGEOMETRY";
+                const bool previousMaterialTextures = g_rsxSettings.exportMaterialTextures;
                 g_rsxSettings.SetExportDirectory(outputRoot / parts[2]);
-                g_rsxSettings.exportMaterialTextures = true;
-                HandlePakAssetExportList({ asset }, false);
-                if (!asset->GetExportedStatus())
+                g_rsxSettings.exportMaterialTextures = !geometryOnly;
+                try
                 {
-                    asset->SetExportedStatus(false);
-                    g_rsxSettings.exportMaterialTextures = false;
                     HandlePakAssetExportList({ asset }, false);
-                    g_rsxSettings.exportMaterialTextures = true;
+                    if (!geometryOnly && !asset->GetExportedStatus())
+                    {
+                        asset->SetExportedStatus(false);
+                        g_rsxSettings.exportMaterialTextures = false;
+                        HandlePakAssetExportList({ asset }, false);
+                    }
                 }
+                catch (...)
+                {
+                    g_rsxSettings.exportMaterialTextures = previousMaterialTextures;
+                    throw;
+                }
+                g_rsxSettings.exportMaterialTextures = previousMaterialTextures;
 
                 reply(asset->GetExportedStatus() ? "DONE" : "FAILED", parts[1] + "\t" + parts[2]);
             }
-            else if (parts.size() >= 3 && parts.size() <= 10 && parts[0] == "EXPORTBATCH")
+            else if (parts.size() >= 3 && parts.size() <= 10 &&
+                (parts[0] == "EXPORTBATCH" || parts[0] == "EXPORTBATCHGEOMETRY"))
             {
                 if (!isHex(parts[1], 8))
                     throw std::runtime_error("Invalid batch job ID");
@@ -336,8 +347,10 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
                     assets.emplace_back(asset);
                 }
 
+                const bool geometryOnly = parts[0] == "EXPORTBATCHGEOMETRY";
+                const bool previousMaterialTextures = g_rsxSettings.exportMaterialTextures;
                 g_rsxSettings.SetExportDirectory(outputRoot / parts[1]);
-                g_rsxSettings.exportMaterialTextures = true;
+                g_rsxSettings.exportMaterialTextures = !geometryOnly;
                 try
                 {
                     HandlePakAssetExportList(assets, false);
@@ -350,16 +363,16 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
                             failed.emplace_back(asset);
                         }
                     }
-                    if (!failed.empty())
+                    if (!geometryOnly && !failed.empty())
                     {
                         g_rsxSettings.exportMaterialTextures = false;
                         HandlePakAssetExportList(std::move(failed), false);
                     }
-                    g_rsxSettings.exportMaterialTextures = true;
+                    g_rsxSettings.exportMaterialTextures = previousMaterialTextures;
                 }
                 catch (...)
                 {
-                    g_rsxSettings.exportMaterialTextures = true;
+                    g_rsxSettings.exportMaterialTextures = previousMaterialTextures;
                     throw;
                 }
 

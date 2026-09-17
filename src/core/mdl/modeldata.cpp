@@ -1345,14 +1345,17 @@ bool ExportModelCast(const ModelParsedData_t* const parsedData, std::filesystem:
 				const ModelMeshData_t& meshData = modelData.meshes[i];
 
 				assertm(materials.contains(meshData.materialId), "material should be parsed as it is used");
-				const uint64_t materialGuid = parsedData->materials.at(materials.find(meshData.materialId)->second.id).guid;
+				const ModelMaterialData_t& materialData = parsedData->materials.at(materials.find(meshData.materialId)->second.id);
+				const uint64_t materialGuid = materialData.guid;
 
 				assertm(meshData.meshVertexDataIndex != invalidNoodleIdx, "mesh data hasn't been parsed ??");
 
 				std::unique_ptr<char[]> parsedVertexDataBuf = parsedData->meshVertexData.getIdx(meshData.meshVertexDataIndex);
 				const CMeshData* const parsedVertexData = reinterpret_cast<CMeshData*>(parsedVertexDataBuf.get());
 
-				std::string matl = nullptr != meshData.materialAsset ? GetStringAfterLastSlash(meshData.GetMaterialAsset()->name) : std::to_string(materialGuid);
+				const MaterialAsset* const materialAsset = meshData.materialAsset ? meshData.GetMaterialAsset() : nullptr;
+				const char* const materialName = materialAsset && materialAsset->name ? materialAsset->name : materialData.name;
+				std::string matl = materialName ? GetStringAfterLastSlash(materialName) : std::to_string(materialGuid);
 				std::string meshName = std::format("{}_{}", modelData.name, matl);
 				cast::CastNode meshNode(cast::CastId::Mesh, 1, RTech::StringToGuid(meshName.c_str())); // name
 
