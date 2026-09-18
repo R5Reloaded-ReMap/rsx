@@ -2249,46 +2249,24 @@ bool RTech::DecompressSnowflake(int64_t param_buffer, uint64_t data_size, uint64
 }
 #pragma warning(pop)
 
-std::unique_ptr<char[]> RTech::DecompressStreamedBuffer(std::unique_ptr<char[]> buf, uint64_t& bufSize, const eCompressionType compType)
+std::unique_ptr<char[]> RTech::DecompressStreamedBuffer(std::unique_ptr<char[]> buf, uint64_t& bufSize, const eCompressionType compType, const uint64_t compressedSize)
 {
     switch (compType)
     {
     case eCompressionType::OODLE:
     {
-        OodleLZDecoder* const decoder = OodleLZDecoder_Create(OodleLZ_Compressor::OodleLZ_Compressor_Invalid, bufSize, nullptr, 0);
+        const uint64_t inputSize = compressedSize ? compressedSize : bufSize;
+        if (!buf || inputSize == 0 || bufSize == 0)
+            return std::move(buf);
 
-        int outPos = 0;
-        int bufPos = 0;
-
-        // Check if we are compressed first.
-        OodleLZ_DecodeSome_Out decodeOut = {};
         std::unique_ptr<char[]> outBuf = std::make_unique<char[]>(bufSize);
-        if (!OodleLZDecoder_DecodeSome(decoder, &decodeOut, outBuf.get(), outPos, bufSize, bufSize - outPos, buf.get() + bufPos, bufSize - bufPos, OodleLZ_FuzzSafe_No, OodleLZ_CheckCRC_No, OodleLZ_Verbosity::OodleLZ_Verbosity_None, OodleLZ_Decode_ThreadPhaseAll))
+        const OO_SINTa decodedSize = OodleLZ_Decompress(buf.get(), inputSize, outBuf.get(), bufSize,
+            OodleLZ_FuzzSafe_Yes, OodleLZ_CheckCRC_No, OodleLZ_Verbosity_None);
+        if (decodedSize <= 0)
         {
-            // Not decompressed.
-            OodleLZDecoder_Destroy(decoder);
             return std::move(buf);
         }
-
-        // We already have an initial amount of decompressed data due to the first run.
-        while (true)
-        {
-            outPos += decodeOut.decodedCount;
-            bufPos += decodeOut.compBufUsed;
-
-            // Are we done with decompressing?
-            if (decodeOut.compBufUsed + decodeOut.decodedCount == 0)
-                break;
-
-            // We shouldn't ever exceed our initial bufSize..
-            if (outPos >= bufSize)
-                break;
-
-            // Continue decompressing.
-            OodleLZDecoder_DecodeSome(decoder, &decodeOut, outBuf.get(), outPos, bufSize, bufSize - outPos, buf.get() + bufPos, bufSize - bufPos, OodleLZ_FuzzSafe_No, OodleLZ_CheckCRC_No, OodleLZ_Verbosity::OodleLZ_Verbosity_None, OodleLZ_Decode_ThreadPhaseAll);
-        }
-
-        OodleLZDecoder_Destroy(decoder);
+        bufSize = static_cast<uint64_t>(decodedSize);
         return std::move(outBuf);
     }
 	case eCompressionType::PAKFILE:

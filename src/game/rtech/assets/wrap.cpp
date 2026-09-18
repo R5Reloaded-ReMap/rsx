@@ -99,7 +99,7 @@ std::unique_ptr<char[]> GetWrapAssetData(CAsset* const asset, uint64_t* outSize)
     uint64_t wrapOutSize = wrapAsset->dcmpSize;
     if (wrapAsset->isCompressed)
     {
-        wrapData = RTech::DecompressStreamedBuffer(std::move(wrapData), wrapOutSize, eCompressionType::OODLE);
+        wrapData = RTech::DecompressStreamedBuffer(std::move(wrapData), wrapOutSize, eCompressionType::OODLE, wrapSize);
     }
 
     if (outSize)

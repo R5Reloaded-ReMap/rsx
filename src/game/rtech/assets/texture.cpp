@@ -1151,7 +1151,7 @@ std::unique_ptr<char[]> GetTextureDataForMip(CPakAsset* const asset, const Textu
     if (mip->compType != eCompressionType::NONE)
     {
         uint64_t slicePitch = mip->slicePitch;
-        txtrData = RTech::DecompressStreamedBuffer(std::move(txtrData), slicePitch, mip->compType);
+        txtrData = RTech::DecompressStreamedBuffer(std::move(txtrData), slicePitch, mip->compType, mip->sizeSingle);
     }
 
     if (mip->swizzle != eTextureSwizzle::SWIZZLE_NONE)

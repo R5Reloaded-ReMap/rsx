@@ -800,7 +800,7 @@ static void ParseModelVertexData_v16(CPakAsset* const asset, ModelAsset* const m
             std::memcpy(cmpBuf.get(), pDataBuffer + group->dataOffset, group->dataSizeCompressed);
 
             uint64_t dataSizeDecompressed = group->dataSizeDecompressed; // this is cringe, can't  be const either, so awesome
-            dcmpBuf = RTech::DecompressStreamedBuffer(std::move(cmpBuf), dataSizeDecompressed, group->dataCompression);
+            dcmpBuf = RTech::DecompressStreamedBuffer(std::move(cmpBuf), dataSizeDecompressed, group->dataCompression, group->dataSizeCompressed);
 
             break;
         }
@@ -1008,7 +1008,7 @@ static void ParseModelVertexData_v19_2(CPakAsset* const asset, ModelAsset* const
             std::memcpy(cmpBuf.get(), pDataBuffer + group->dataOffset, group->dataSizeCompressed);
 
             uint64_t dataSizeDecompressed = group->dataSizeDecompressed; // this is cringe, can't  be const either, so awesome
-            dcmpBuf = RTech::DecompressStreamedBuffer(std::move(cmpBuf), dataSizeDecompressed, group->dataCompression);
+            dcmpBuf = RTech::DecompressStreamedBuffer(std::move(cmpBuf), dataSizeDecompressed, group->dataCompression, group->dataSizeCompressed);
 
             break;
         }
@@ -1759,7 +1759,7 @@ static bool ExportModelStreamedData(const ModelAsset* const modelAsset, std::fil
                 memcpy_s(dcmpBuf.get(), group.dataSizeCompressed, streamedData + group.dataOffset, group.dataSizeCompressed);
 
                 size_t dataSizeDecompressed = group.dataSizeDecompressed;
-                dcmpBuf = RTech::DecompressStreamedBuffer(std::move(dcmpBuf), dataSizeDecompressed, group.dataCompression);
+                dcmpBuf = RTech::DecompressStreamedBuffer(std::move(dcmpBuf), dataSizeDecompressed, group.dataCompression, group.dataSizeCompressed);
 
                 memcpy_s(pPos, group.dataSizeDecompressed, dcmpBuf.get(), group.dataSizeDecompressed);
 

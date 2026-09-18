@@ -194,7 +194,7 @@ public:
     static int64_t sub_7FF7FC23C880(int64_t param_buffer, uint8_t a2, int64_t a3);
     static __int64 sub_7FF7FC23CD20(unsigned __int8* param_buffer, unsigned int a2);
 
-    static std::unique_ptr<char[]> DecompressStreamedBuffer(std::unique_ptr<char[]> buf, uint64_t& bufSize, const eCompressionType compType);
+    static std::unique_ptr<char[]> DecompressStreamedBuffer(std::unique_ptr<char[]> buf, uint64_t& bufSize, const eCompressionType compType, const uint64_t compressedSize = 0);
 
     static uint64_t __fastcall StringToGuid(const char* str);
     static uint32_t __fastcall StringToUIMGHash(const char* str);

@@ -739,7 +739,7 @@ const bool CPakFile::DecompressFileBuffer(const char* fileBuffer, std::shared_pt
         // [rika]: this can probably be removed now
         const uint64_t cmpBufQWord = *reinterpret_cast<uint64_t*>(cmpBuf.get());
 
-        std::unique_ptr<char[]> data = RTech::DecompressStreamedBuffer(std::move(cmpBuf), decodeSize, eCompressionType::OODLE);
+        std::unique_ptr<char[]> data = RTech::DecompressStreamedBuffer(std::move(cmpBuf), decodeSize, eCompressionType::OODLE, compressedDataSize);
 
         const uint64_t dcmpBufQWord = *reinterpret_cast<uint64_t*>(data.get());
 
