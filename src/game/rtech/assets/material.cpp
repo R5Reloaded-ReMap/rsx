@@ -247,7 +247,8 @@ void PostLoadMaterialAsset(CAssetContainer* const container, CAsset* const asset
     {
         ShaderSetAsset* const shdsAsset = materialAsset->shaderSetAsset->extraData<ShaderSetAsset*>();
 
-        if (shdsAsset->pixelShaderAsset)
+        // Newer, unsupported shaderset versions have an asset record but no parsed extra data.
+        if (shdsAsset && shdsAsset->pixelShaderAsset)
         {
             materialAsset->resourceBindings = ResourceBindingFromDXBlob(shdsAsset->pixelShaderAsset, D3D10_SIT_TEXTURE);
             materialAsset->cpuDataBuf = ConstBufVarFromDXBlob(shdsAsset->pixelShaderAsset, "CBufUberStatic");
