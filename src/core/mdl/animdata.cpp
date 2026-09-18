@@ -927,9 +927,10 @@ void ParseAnimation(ModelSeq_t* const seqdesc, ModelAnim_t* const animdesc, cons
 {
 	const int boneCount = static_cast<int>(bones->size());
 
-	Vector positions[256]{};
-	Quaternion quats[256]{};
-	Vector scales[256]{};
+	// Models with more than 256 bones must not overrun fixed stack buffers.
+	std::vector<Vector> positions(boneCount);
+	std::vector<Quaternion> quats(boneCount);
+	std::vector<Vector> scales(boneCount);
 
 	if (animdesc->flags & eStudioAnimFlags::ANIM_DELTA)
 	{
