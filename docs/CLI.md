@@ -30,6 +30,7 @@ These arguments do not take a value. Including them in the arguments provided to
 | --------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | --nmlrecalc     | none, directx, opengl                          | Sets the type of normal-map recalculation that should be used when exporting materials                           |
 | --texturenames  | guid, stored, text, semantic                   | Sets the format of the names of exported/previewed texture assets. See below<sup>2</sup>                         |
+| --texturemaxsize | (integer, max: `8192`, default: `0`)          | For highest-mip PNG exports, selects the largest loaded mip that does not exceed this size; `0` disables the limit |
 | --qcmajor       | (16-bit integer)                               | When exporting models as [SMD](./assets/rpak/Model.md#smd), sets the major version of the QC file                |
 | --qcminor       | (16-bit integer)                               | When exporting models as [SMD](./assets/rpak/Model.md#smd), sets the minor version of the QC file                |
 | --exportdir     | (string, directory path)                       | Sets the directory that all assets are exported to                                                               |

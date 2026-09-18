@@ -710,6 +710,24 @@ inline void NormalRecalc(const bool isNormal, CTexture* texture)
     }
 }
 
+static const TextureMip_t* SelectHighestPngMip(const TextureAsset* const txtrAsset)
+{
+    const TextureMip_t* const highest = &txtrAsset->mipArray.back();
+    const uint32_t maximumSize = g_rsxSettings.exportTextureMaxSize;
+    if (maximumSize == 0 || std::max(highest->width, highest->height) <= maximumSize)
+        return highest;
+
+    // Mips are stored from the smallest to the highest resolution. Prefer the largest loaded mip
+    // that fits the requested preview budget, avoiding a full-resolution decode and later resize.
+    for (auto mip = txtrAsset->mipArray.rbegin(); mip != txtrAsset->mipArray.rend(); ++mip)
+        if (mip->isLoaded && std::max(mip->width, mip->height) <= maximumSize)
+            return &*mip;
+
+    // Unusual assets may not expose a small loaded mip. Preserve the previous behavior and let
+    // the caller's normalizer enforce its final size.
+    return highest;
+}
+
 bool ExportPngTextureAsset(CPakAsset* const asset, const TextureAsset* const txtrAsset, std::filesystem::path& exportPath, const int setting, const bool isNormal)
 {
     // Add extension | replace the .rpak ext.
@@ -723,8 +741,7 @@ bool ExportPngTextureAsset(CPakAsset* const asset, const TextureAsset* const txt
     {
         for (size_t arrayIdx = 0; arrayIdx < txtrAsset->arraySize; arrayIdx++)
         {
-            // Grab highest mip.
-            const TextureMip_t* const mip = &txtrAsset->mipArray[txtrAsset->mipArray.size() - 1];
+            const TextureMip_t* const mip = SelectHighestPngMip(txtrAsset);
             std::unique_ptr<char[]> txtrData = GetTextureDataForMip(asset, mip, s_PakToDxgiFormat[txtrAsset->imgFormat], arrayIdx);
 
             if (txtrAsset->arraySize > 1)

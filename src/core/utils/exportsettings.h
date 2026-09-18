@@ -34,6 +34,7 @@ struct RSXSettings_t
     // texture
     uint32_t exportNormalRecalcSetting;
     uint32_t exportTextureNameSetting;
+    uint32_t exportTextureMaxSize;
 
     bool exportMaterialTextures;
 

@@ -3,7 +3,7 @@
 #include <game/rtech/utils/bsp/bspflags.h>
 
 RSXSettings_t g_rsxSettings{ .exportNormalRecalcSetting = eNormalExportRecalc::NML_RECALC_NONE, .exportTextureNameSetting = eTextureExportName::TXTR_NAME_TEXT,
-	.exportMaterialTextures = true, .exportPathsFull = false, .exportAssetDeps = false, .disableCachedNames = false, .previewedSkinIndex = 0,
+	.exportTextureMaxSize = 0, .exportMaterialTextures = true, .exportPathsFull = false, .exportAssetDeps = false, .disableCachedNames = false, .previewedSkinIndex = 0,
 	.qcMajorVersion = 49, .qcMinorVersion = 0, .exportRigSequences = true, .exportModelSkin = false, .exportModelMatsTruncated = false,
 	.exportQCIFiles = false, .useOrigScriptExportExtensions = false, .exportPhysicsContentsFilter = static_cast<uint32_t>(TRACE_MASK_ALL), .bridgePort = 3033,
 	.exportDirectory = "",
@@ -31,6 +31,14 @@ void RSXSettings_t::SetFromCLI(const CCommandLine* cli)
 			this->exportTextureNameSetting = TXTR_NAME_TEXT;
 		else if (!_stricmp(texNames, "semantic"))
 			this->exportTextureNameSetting = TXTR_NAME_SMTC;
+	}
+
+	if (const char* const maxSize = cli->GetParamValue("--texturemaxsize"))
+	{
+		char* end = nullptr;
+		const unsigned long value = strtoul(maxSize, &end, 10);
+		if (end != maxSize && *end == '\0')
+			this->exportTextureMaxSize = static_cast<uint32_t>(std::min(value, 8192ul));
 	}
 
 	this->exportMaterialTextures = cli->HasParam("-matltextures");
