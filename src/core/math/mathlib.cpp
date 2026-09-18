@@ -119,10 +119,11 @@ __forceinline __m128 QuaternionBlendSIMD(const __m128& p, const __m128& q, float
 void QuaternionBlend(const Quaternion& p, const Quaternion& q, float t, Quaternion& qt)
 {
 #if MATH_SIMD
-	__m128 psimd = _mm_load_ps(p.Base());
-	__m128 qsimd = _mm_load_ps(q.Base());
+	// These values can be stack locals with only four-byte alignment.
+	__m128 psimd = _mm_loadu_ps(p.Base());
+	__m128 qsimd = _mm_loadu_ps(q.Base());
 	__m128 qtsimd = QuaternionBlendSIMD(psimd, qsimd, t);
-	_mm_store_ps(qt.Base(), qtsimd);
+	_mm_storeu_ps(qt.Base(), qtsimd);
 #else
 	// decide if one of the quaternions is backwards
 	Quaternion q2;
@@ -314,7 +315,7 @@ void AngleQuaternion(const QAngle& angles, Quaternion& outQuat)
 
 #if MATH_SIMD
 	__m128 degrees, /*scale,*/ sine, cosine;
-	degrees = _mm_load_ps(angles.Base());
+	degrees = _mm_loadu_ps(angles.Base());
 	//scale = ReplicateX4(DEG2RAD(0.5f));
 	degrees = _mm_mul_ps(degrees, aqScaleDegrees);
 
@@ -374,7 +375,8 @@ void AngleQuaternion(const RadianEuler& angles, Quaternion& outQuat)
 
 #if MATH_SIMD
 	__m128 radians, /*scale,*/ sine, cosine;
-	radians = _mm_load_ps(angles.Base());
+	// RadianEuler is not guaranteed to be aligned for an SSE aligned load.
+	radians = _mm_loadu_ps(angles.Base());
 	//scale = ReplicateX4(0.5f);
 	radians = _mm_mul_ps(radians, aqScaleRadians);
 
