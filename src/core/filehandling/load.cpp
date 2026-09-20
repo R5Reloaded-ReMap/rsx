@@ -250,6 +250,7 @@ void OnCLILoadComplete(const CCommandLine* const cli)
 
 // ReMap protocol v1: keep one RSX process and one archive set alive across model exports.
 // V2 adds EXPORTBATCH. V3 adds geometry-only commands for assets whose streamed textures crash RSX.
+// V4 allows a deferred texture-repair pass to submit every corrupt model from one loaded map at once.
 static void RunReMapSession(const CCommandLine* const cli, const std::filesystem::path& outputRoot)
 {
     auto reply = [](const char* status, const std::string& detail = "")
@@ -326,7 +327,7 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
 
                 reply(asset->GetExportedStatus() ? "DONE" : "FAILED", parts[1] + "\t" + parts[2]);
             }
-            else if (parts.size() >= 3 && parts.size() <= 10 &&
+            else if (parts.size() >= 3 && parts.size() <= 65538 &&
                 (parts[0] == "EXPORTBATCH" || parts[0] == "EXPORTBATCHGEOMETRY"))
             {
                 if (!isHex(parts[1], 8))

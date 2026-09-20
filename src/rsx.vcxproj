@@ -546,7 +546,8 @@
     <PostBuildEvent>
       <Command>echo ReMap session protocol v1&gt;"$(TargetPath).remap-session-v1"
 echo ReMap batch session protocol v2&gt;"$(TargetPath).remap-session-v2"
-echo ReMap geometry fallback protocol v3&gt;"$(TargetPath).remap-session-v3"</Command>
+echo ReMap geometry fallback protocol v3&gt;"$(TargetPath).remap-session-v3"
+echo ReMap bulk texture repair protocol v4&gt;"$(TargetPath).remap-session-v4"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_CI|x64'">
