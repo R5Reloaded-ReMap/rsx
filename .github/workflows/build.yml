@@ -26,5 +26,6 @@ jobs:
             bin/${{ env.BUILD_PROFILE }}/*.dll
             bin/${{ env.BUILD_PROFILE }}/*.exe
             bin/${{ env.BUILD_PROFILE }}/*.pdb
+            bin/${{ env.BUILD_PROFILE }}/*.remap-session
             bin/${{ env.BUILD_PROFILE }}/*.txt
             thirdpartylegalnotices.txt
