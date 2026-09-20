@@ -35,7 +35,7 @@ void Vertex_t::ParseWeightFromVG_256(Vertex_t* const vert, VertexWeight_t* const
 	// model has more than 3 weights per vertex
 	if (parseFlags & VERT_PARSE_EXTRAWEIGHT)
 	{
-		const vg::BlendWeightIndicesPacked_256_s* const blendIndices = VERT_DATA(vg::BlendWeightIndicesPacked_256_s, rawVertexData, offset + 4);
+		const vg::BlendWeightExtraIndices_256_s* const blendIndices = VERT_DATA(vg::BlendWeightExtraIndices_256_s, rawVertexData, offset + 4);
 
 		assertm(blendIndices->boneCount < 16, "model had more than 16 bones on complex weights");
 
@@ -121,7 +121,7 @@ void Vertex_t::ParseWeightFromVG_1024(Vertex_t* const vert, VertexWeight_t* cons
 	// model has more than 3 weights per vertex
 	if (parseFlags & VERT_PARSE_EXTRAWEIGHT)
 	{
-		const vg::BlendWeightIndicesPacked_1024_s* const blendIndices = VERT_DATA(vg::BlendWeightIndicesPacked_1024_s, rawVertexData, offset + 4);
+		const vg::BlendWeightExtraIndices_1024_s* const blendIndices = VERT_DATA(vg::BlendWeightExtraIndices_1024_s, rawVertexData, offset + 4);
 
 		assertm(blendIndices->boneCount < 16, "model had more than 16 bones on complex weights");
 
@@ -1892,8 +1892,6 @@ bool ExportSeqDesc(const int setting, const ModelSeq_t* const seqdesc, std::file
 	}
 }
 
-#if defined(HAS_BONED_MODELS)
-
 void CalcMatrixForBone_Unparented(const DXBone_t& bone, XMMATRIX& matOut)
 {
 	XMVECTOR quat = { bone.quat.x, bone.quat.y, bone.quat.z, bone.quat.w };
@@ -2318,7 +2316,6 @@ bool Preview_SequencesSection(ModelPreviewInfo_t* const info, const ModelParsedD
 	// if we clicked refresh then the caller needs to reparse the data so let them know!
 	return refreshRequested;
 }
-#endif
 
 void* PreviewParsedData(ModelPreviewInfo_t* const info, ModelParsedData_t* const parsedData, char* const assetName, const uint64_t assetGUID, const bool firstFrameForAsset)
 {
@@ -2557,11 +2554,9 @@ void* PreviewParsedData(ModelPreviewInfo_t* const info, ModelParsedData_t* const
 		}
 	}
 
-#if defined(HAS_BONED_MODELS)
 	// Map some (potentially incorrect) bone data
 	if (!drawData->boneMatrixBuffer)
 		InitModelBoneMatrix(drawData, parsedData);
-#endif
 
 	Preview_MapTransformsBuffer(drawData);
 	Preview_MapModelInstanceBuffer(drawData);
