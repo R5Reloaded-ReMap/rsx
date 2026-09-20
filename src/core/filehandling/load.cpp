@@ -339,12 +339,21 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
                         throw std::runtime_error("Invalid model ID");
                     const uint64_t guid = std::stoull(parts[i], nullptr, 16);
                     CPakAsset* const asset = g_assetData.FindAssetByGUID<CPakAsset>(guid);
+                    // A batch may come from an older R5R/R5F index while the currently installed
+                    // official map has gained or lost individual models. Missing GUIDs are normal:
+                    // export the models that still exist and let ReMap fall back only for the rest.
                     if (!asset || asset->GetAssetType() != MAKEFOURCC('m', 'd', 'l', '_'))
-                        throw std::runtime_error("Model missing from loaded archive");
+                        continue;
                     if (std::find(assets.begin(), assets.end(), asset) != assets.end())
                         throw std::runtime_error("Duplicate model ID");
                     asset->SetExportedStatus(false);
                     assets.emplace_back(asset);
+                }
+
+                if (assets.empty())
+                {
+                    reply("BATCHDONE", parts[1]);
+                    continue;
                 }
 
                 const bool geometryOnly = parts[0] == "EXPORTBATCHGEOMETRY";
