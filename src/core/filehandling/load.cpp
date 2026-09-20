@@ -309,7 +309,7 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
                 g_rsxSettings.exportMaterialTextures = !geometryOnly;
                 try
                 {
-                    HandlePakAssetExportList({ asset }, false);
+                    HandlePakAssetExportList({ asset }, !geometryOnly);
                     if (!geometryOnly && !asset->GetExportedStatus())
                     {
                         asset->SetExportedStatus(false);
@@ -353,7 +353,7 @@ static void RunReMapSession(const CCommandLine* const cli, const std::filesystem
                 g_rsxSettings.exportMaterialTextures = !geometryOnly;
                 try
                 {
-                    HandlePakAssetExportList(assets, false);
+                    HandlePakAssetExportList(assets, !geometryOnly);
                     std::deque<CAsset*> failed;
                     for (CAsset* const asset : assets)
                     {
